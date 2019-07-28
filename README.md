@@ -3,10 +3,14 @@ explaining and extending the approach of Aktekin and Musal (2015)
 
 # Prerequisites 
 + Rstudio/ R programming compiler
++ WinBUGS 
 
-# Getting Started 
-+ download input files and run sourcecode.R 
-+ install all packages used in the R code
+# How to use
++ To see how covariates (inequality measures, poverty and unemployment) are calculate, 
+- download files in input_files and run sourcecode.R 
+- install all packages used in the R code (if necessary)
++ To analyze the model script & To do the modelling in WinBUGS
+- download the files in WinBUGS models subfolder
 
 # Authors
 + Jia Yan Ng
