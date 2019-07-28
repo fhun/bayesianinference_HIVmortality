@@ -7,10 +7,12 @@ explaining and extending the approach of Aktekin and Musal (2015)
 
 # How to use
 + To see how covariates (inequality measures, poverty and unemployment) are calculated:
-	- download files in input_files and run sourcecode.R 
+	- retrieve files in "input_files" and run sourcecode.R 
 	- install all packages used in the R code (if necessary)
 + To analyze the model script & To do the modelling in WinBUGS:
-	- download the files in WinBUGS models subfolder
+	- retrieve the files in "WinBUGS models" 
++ To view the MCMC diagnostics HTML plots 
+	- retrieve the files in "HTML_Diagnostics"  
 
 # Authors
 + Jia Yan Ng
