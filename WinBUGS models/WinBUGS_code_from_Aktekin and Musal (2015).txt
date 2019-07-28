@@ -1,0 +1,203 @@
+# this code corresponds to the model M4
+model {
+#A constant to be used in the 0 1 trick, outlined in OpenBugs help files to
+#introduce non-standard distributions 
+ K<-3000000
+
+# Likelihood is to be specified for every year 1...5 and county 1....62
+for (i in 1 : 62) {	
+#If Observed Mortality at year j (j=1...5) in county i is 0, d will be 0, otherwise d will be 1. 
+d[i,1]<-step(O1[i]-1)
+d[i,2]<-step(O2[i]-1)
+d[i,3]<-step(O3[i]-1)
+d[i,4]<-step(O4[i]-1)
+d[i,5]<-step(O5[i]-1)
+
+#For every year we model the probability of observing a count greater than 0, using 
+#covariates (poverty and inequality), as well as a random effect for the county. 
+#Alpha components are the covariate coefficients, a is the random effect, dc is the term common 
+#to all the counties. The [id] is used to disregard the effect of Hamilton County since it has no 
+#urban ZCTA and is composed mostly of publicly owned parkland.   
+#the p[i,j] is the probability that county i in year j has a positive mortality count which will be used 
+#in the log likelihood computations below
+
+logit(p[i,1]) <- dc[1] + a[i,id[i]] + alpha[2,id[i]]*x[i] + alpha[3,id[i]]*x2[i] 
+
+logit(p[i,2]) <-  dc[2]+ a[i,id[i]] + alpha[2,id[i]]*x[i] + alpha[3,id[i]]*x2[i] 
+
+logit(p[i,3]) <-  dc[3]+ a[i,id[i]] + alpha[2,id[i]]*x[i] + alpha[3,id[i]]*x2[i] 
+
+logit(p[i,4]) <-  dc[4]+ a[i,id[i]] + alpha[2,id[i]]*x[i] + alpha[3,id[i]]*x2[i] 
+
+logit(p[i,5]) <-  dc[5]+ a[i,id[i]] + alpha[2,id[i]]*x[i] + alpha[3,id[i]]*x2[i] 
+
+#lambda is the expected mortality given that the mortality is above 0 in county i, year j
+#the alpha components are the covariate coefficients, same as above, the b terms 
+#are spatial effects for the county i in year j
+
+log(lambda2[i,1])<- log(E[i]) +alpha[4,id[i]]*x[i] + alpha[5,id[i]]*x2[i] +b1[i] 
+
+log(lambda2[i,2])<- log(E[i]) +alpha[4,id[i]]*x[i] + alpha[5,id[i]]*x2[i] +b2[i] 
+
+log(lambda2[i,3])<- log(E[i]) +alpha[4,id[i]]*x[i] + alpha[5,id[i]]*x2[i] +b3[i] 
+
+log(lambda2[i,4])<- log(E[i]) +alpha[4,id[i]]*x[i] + alpha[5,id[i]]*x2[i] +b4[i] 
+
+log(lambda2[i,5])<- log(E[i]) +alpha[4,id[i]]*x[i] + alpha[5,id[i]]*x2[i]+ b5[i] 
+
+#There are two types of 0s in the model. The first type arises from the Poisson distribution, the 
+#other one arises from the inflated portion of 0s.  The term (1-exp(-lambda2[i,j])) is the probability 
+#of having greater than 0 count from the Poisson distribution. The zero inflated portion is 
+#specified with the term (1-p[i,j]). The component p[i,j] is the probability of having a positive 
+#mortality count as quantified with the Poisson distribution  
+#thtau is the probability of having  a positive count and 1-thtau[i,j] is the probability of having 0 
+#count in county i, year j.
+	   
+thtau[i,1]<-p[i,1]*(1-exp(-lambda2[i,1]))	
+thtau[i,2]<-p[i,2]*(1-exp(-lambda2[i,2]))	
+thtau[i,3]<-p[i,3]*(1-exp(-lambda2[i,3]))	
+thtau[i,4]<-p[i,4]*(1-exp(-lambda2[i,4]))	
+thtau[i,5]<-p[i,5]*(1-exp(-lambda2[i,5]))	
+	  					
+ll[i,1]<-(1-d[i,1])*log(1-thtau[i,1]) + d[i,1]*(log(p[i,1]) - lambda2[i,1] + O1[i]*log(lambda2[i,1])   - loggam(O1[i]+1))
+
+ll[i,2]<-(1-d[i,2])*log(1-thtau[i,2]) + d[i,2]*(log(p[i,2]) - lambda2[i,2] + O2[i]*log(lambda2[i,2])   - loggam(O2[i]+1))
+
+ll[i,3]<-(1-d[i,3])*log(1-thtau[i,3]) + d[i,3]*(log(p[i,3]) - lambda2[i,3] + O3[i]*log(lambda2[i,3])   - loggam(O3[i]+1))
+
+ll[i,4]<-(1-d[i,4])*log(1-thtau[i,4]) + d[i,4]*(log(p[i,4]) - lambda2[i,4] + O4[i]*log(lambda2[i,4])   - loggam(O4[i]+1))
+
+ll[i,5]<-(1-d[i,5])*log(1-thtau[i,5]) + d[i,5]*(log(p[i,5]) - lambda2[i,5] + O5[i]*log(lambda2[i,5])   - loggam(O5[i]+1))
+
+#the model log likelihood is the sum of all 5 years log likelihood
+pll[i]<-ll[i,1]+ll[i,2]+ll[i,3]+ll[i,4]+ll[i,5]
+#The 0 and 1 trick as specified by OpenBugs help files.
+   phi[i]<- -pll[i]+K
+   zeros[i]<-0
+   zeros[i]~dpois(phi[i])
+	                          }
+
+# CAR prior distribution for random effects: 
+
+	b1[1:N] ~ car.normal(adj[], weights[], num[], tau[1])
+	b2[1:N] ~ car.normal(adj[], weights[], num[], tau[2])
+	b3[1:N] ~ car.normal(adj[], weights[], num[], tau[3])
+	b4[1:N] ~ car.normal(adj[], weights[], num[], tau[4])
+	b5[1:N] ~ car.normal(adj[], weights[], num[], tau[5])
+
+	for(k in 1:sumNumNeigh) {
+		weights[k] <- 1
+												}
+		
+# Other priors:
+
+for(j in 1:2){
+for(i in 1:62){
+a[i,j]~dnorm(0.0,.001)
+				   }
+				   }
+
+for(j in 1:2){
+for(i in 1:5){
+alpha[i,j]~dnorm(0.0,.001)
+				   }
+				   }
+
+for(i in 1:5){
+dc[i]~dnorm(0.0,.001)
+tau[i]~dgamma(.5,.0005)
+}
+           }
+
+#x is poverty and x2 is theil
+list(N=62,id=c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1),x=c(0.093044,0.2665809,0.35007133,0.11229918,0.13524989,0.10676584,0.11449827,0.10501788,0.13478952,0.11147763,0.05679081,0.09426412,0.1428616,0.04932556,0.07524504,0.12927302,0.13085876,0.12310186,0.0495827,0.11428918,0.1,0.13012896,0.12818222,0.23543182,0.12586377,0.07095896,0.08527452,0.05613628,0.0976436,0.03870658,0.15356618,0.06879565,0.07190161,0.06902783,0.07435508,0.04878719,0.11461988,0.09654044,0.11447876,0.04726436,0.12623016,0.04460813,0.09965265,0.0457961,0.1598109,0.05554417,0.06027363,0.13941753,0.12987037,0.11695541,0.10715768,0.04921927,0.1758794,0.0798531,0.07394245,0.09558952,0.11472819,0.09490993,0.06298083,0.04127549,0.08301766,0.12567568), x2=c(0.5652173913,0.5,0.56,0.75,0.6,0.5,0.6666666667,0.5555555556,0.5,0.3333333333,0.5,0.3333333333,0.5,0.2666666667,0.5384615385,0.5,0.6666666667,0.3333333333,0.25,0.5,0,0.6,0.5555555556,0.5945945946,0,0.4,0.8333333333,0.5128205128,0.375,0.5294117647,0.5,0.5454545455,0.5789473684,0.5151515152,0.7142857143,0.3870967742,0.3333333333,0.6,0.3333333333,0.5,0.5333333333,0.3333333333,0.5,0.36,0.6,0.6428571429,0.5454545455,0.6666666667,0.5,0.5,0.6,0.4361702128,0.4615384615,0.3333333333,0.375,0.6363636364,0.6,0.5,0.5555555556,0.5,0.6666666667,0.666667),
+E = c(6.9276,0.0981,244.2231,2.0596,0.3299,0.526,0.954,0.5617,0.3299,0.3834,0.526,0.107,0.3656,4.7789,11.2786,0.2407,0.2764,0.3031,0.321,0.5171,0.0178,0.2318,0.5439,311.9122,0.2318,0.3923,0.2318,13.4362,0.4636,18.2062,414.4267,1.0699,2.2379,6.3213,0.4725,5.7953,0.3031,0.5171,0.4458,0.8381,163.3474,1.6851,24.0817,4.6362,0.9629,2.6837,0.1694,0.0357,0.1516,0.633,0.3745,18.7233,2.5856,0.1694,0.6954,3.183,0.3923,0.2496,0.5974,23.2258,0.1337,0.0802),  O1=c(19,0,464,2,0,0,1,0,0,0,0,0,0,3,38,0,0,0,0,0,0,0,0,478,0,0,0,38,0,40,709,1,5,9,0,12,0,0,0,0,118,2,44,8,1,4,4,0,0,0,0,45,0,0,0,7,0,0,0,49,0,0), 
+O2=c(23,0,460,3,0,0,1,0,0,0,0,0,0,7,40,0,0,0,0,0,0,0,1,408,0,0,0,28,0,30,635,2,2,11,0,9,0,0,0,0,143,2,48,11,0,3,3,0,0,0,0,40,0,0,0,4,0,0,0,29,0,0), 
+O3=c(14,0,430,5,0,0,0,0,0,0,0,0,0,8,17,0,0,0,0,0,0,0,0,435,0,0,0,36,0,21,577,1,0,12,0,8,0,0,0,0,129,0,47,9,1,2,1,0,0,0,0,40,0,0,0,6,0,0,0,30,0,0), 
+O4=c(7,0,415,4,0,0,0,0,0,0,0,0,0,6,30,0,0,0,0,0,0,0,0,350,0,0,0,
+24,0,37,374,2,6,14,0,13,0,2,0,0,90,2,37,10,2,1,0,0,0,0,0,30,0,0,0,1,0,0,0,19,0,0),
+O5=c(13,0,367,6,0,0,1,0,0,0,0,0,0,7,36,0,0,0,0,0,0,0,2,320,0,0,0,42,0,14,300,3,6,11,0,7,0,0,0,0,69,1,23,7,0,1,1,0,0,0,0,29,0,0,0,7,0,0,0,29,0,0),
+num = c(
+7, 4, 6, 4, 4, 7, 2, 4, 6, 2, 
+5, 7, 7, 5, 6, 4, 3, 4, 6, 7, 
+0, 8, 3, 5, 5, 6, 7, 5, 7, 5, 
+5, 3, 6, 6, 6, 6, 4, 6, 7, 5, 
+5, 6, 2, 4, 4, 7, 6, 7, 7, 6, 
+6, 1, 3, 5, 6, 7, 3, 4, 4, 7, 
+5, 4
+),
+adj = c(
+48, 47, 46, 42, 29, 20, 11, 
+61, 51, 26, 5, 
+60, 44, 41, 31, 30, 24, 
+54, 13, 12, 9, 
+61, 15, 7, 2, 
+59, 55, 50, 49, 38, 34, 12, 
+15, 5, 
+55, 54, 51, 49, 
+39, 34, 27, 13, 12, 4, 
+17, 16, 
+56, 42, 20, 14, 1, 
+55, 54, 34, 27, 9, 6, 4, 
+56, 53, 48, 39, 20, 9, 4, 
+56, 40, 36, 20, 11, 
+61, 37, 32, 19, 7, 5, 
+58, 57, 17, 10, 
+45, 16, 10, 
+47, 46, 29, 22, 
+61, 37, 32, 28, 26, 15, 
+56, 48, 42, 14, 13, 11, 1, 
+
+48, 45, 39, 33, 29, 27, 25, 18, 
+45, 38, 25, 
+43, 41, 31, 30, 3, 
+45, 38, 33, 23, 22, 
+61, 51, 35, 28, 19, 2, 
+39, 38, 34, 33, 22, 12, 9, 
+59, 37, 35, 26, 19, 
+48, 47, 46, 39, 22, 18, 1, 
+60, 52, 41, 24, 3, 
+60, 43, 41, 24, 3, 
+37, 19, 15, 
+39, 38, 34, 27, 25, 22, 
+38, 33, 27, 12, 9, 6, 
+62, 59, 51, 50, 28, 26, 
+60, 56, 53, 44, 40, 14, 
+32, 28, 19, 15, 
+34, 33, 27, 25, 23, 6, 
+48, 33, 29, 27, 22, 13, 9, 
+60, 56, 44, 36, 14, 
+60, 31, 30, 24, 3, 
+58, 47, 46, 20, 11, 1, 
+31, 24, 
+60, 40, 36, 3, 
+25, 23, 22, 17, 
+58, 57, 47, 42, 29, 18, 1, 
+48, 46, 42, 29, 18, 1, 
+47, 39, 29, 22, 20, 13, 1, 
+62, 55, 54, 51, 50, 8, 6, 
+62, 59, 55, 49, 35, 6, 
+62, 49, 35, 26, 8, 2, 
+30, 
+56, 36, 13, 
+55, 49, 12, 8, 4, 
+54, 50, 49, 12, 8, 6, 
+53, 40, 36, 20, 14, 13, 11, 
+58, 46, 16, 
+57, 46, 42, 16, 
+50, 35, 28, 6, 
+44, 41, 40, 36, 31, 30, 3, 
+26, 19, 15, 5, 2, 
+51, 50, 49, 35
+),
+sumNumNeigh = 314)
+
+
+#Starting Points for 1 Chain 
+
+list(tau = c(1,1,1,1,1), alpha = structure(.Data = c(0,0,0,0,0,0,0,0,0,0),.Dim = c(5,2)), dc= c(1,1,1,1,1), a = structure(.Data = c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),.Dim = c(62,2)), b1=c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+b2=c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+b3=c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+b4=c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+b5=c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+)
