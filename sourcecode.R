@@ -76,7 +76,7 @@ library(coda)
 library(ggmcmc)
 library(mcmcplots)
 
-setwd("./input_files/Coda")
+setwd("./input_files/coda")
 file.List <- list.files(".")
 file.List <- file.List[sort.list(file.List)]
 # load coda files and generate MCMC objects for each models 
