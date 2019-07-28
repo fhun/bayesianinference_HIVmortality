@@ -3,7 +3,7 @@ library(magrittr)
 library(DataCombine)
 library(car)
 
-setwd("/Users/jiayan/Downloads/bayesianinference_HIVmortality-master/")
+setwd("/Users/jiayan/Downloads/bayesianinference_HIVmortality-master/input_files")
 data <- read_csv("HIVdf.csv")
 # Compute 4 inequality measures by the definition in chap 2.2.3
 Theil <- data %$% left_join(., setNames(aggregate(PerCapInc*Pop, 
@@ -28,22 +28,22 @@ InsertRow(., c("Hamilton",1,0,0,0,0),21) %>% mutate_at(c(-1), as.numeric) %>% #i
 mutate(T4 = T4/zctaCount) %>% select(CountyName, T1,T2,T3,T4) # re-order sequence
 
 # create T1 Boxplot 
-Boxplot(Theil$T1, id = list(labels = theil$CountyName, cex = 3, n = 2), 
+Boxplot(Theil$T1, id = list(labels = Theil$CountyName, cex = 3, n = 2), 
         ann = FALSE, cex.axis = 2.5, cex = 3)
 title(ylab = parse(text=paste("T", "^1 ","*Index")), cex.lab = 3, line = 4)
 
 # create T2 Boxplot 
-Boxplot(Theil$T2, id = list(labels = theil$CountyName, cex = 3), 
+Boxplot(Theil$T2, id = list(labels = Theil$CountyName, cex = 3), 
         ann = FALSE, cex.axis = 2.5, cex = 3)
 title(ylab = parse(text = paste("T^2 ", "*Index")), cex.lab = 3, line = 4)
 
 # create T3 Boxplot 
-Boxplot(Theil$T3, id = list(labels = theil$CountyName, cex = 3, n = 2), 
+Boxplot(Theil$T3, id = list(labels = Theil$CountyName, cex = 3, n = 2), 
         ann = FALSE, cex.axis = 2.5, cex = 3)
 title(ylab = parse(text = paste("T^3 *Index")), cex.lab = 3, line = 4)
 
 # create T4 Boxplot 
-Boxplot(Theil$T4, id = list(labels = theil$CountyName, cex = 3), 
+Boxplot(Theil$T4, id = list(labels = Theil$CountyName, cex = 3), 
         ann = FALSE, cex.axis = 2.5, cex = 3)
 title(ylab = parse(text = paste("T^4 *Index")), cex.lab = 3, line = 4)
 
@@ -58,9 +58,10 @@ une <- data %>% select(CountyName, InLaborForce, Unemployed) %$%
 left_join(setNames(aggregate(InLaborForce, FUN = sum, by = list(CountyName)), 
 c("CountyName", "LaborForceSum")), setNames(aggregate(Unemployed, FUN = sum, 
 by = list(CountyName)), c("CountyName", "UnemployedSum")), 
-by = c("CountyName")) %>% InsertRow(., c("Hamilton",0,0),21) %>% 
-mutate_at(c(2,3), as.numeric) %>% 
-mutate(UnemploymentRate = UnemployedSum/LaborForceSum)
+by = c("CountyName")) %>% 
+mutate(UnemploymentRate = UnemployedSum/LaborForceSum) %>% 
+InsertRow(., c("Hamilton",0,0,0),21) %>% 
+mutate_at(c(2,3,4), as.numeric)
 
 # Create Poverty Boxplot
 par(mar = c(1,7,1,1))
