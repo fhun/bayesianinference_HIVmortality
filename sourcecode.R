@@ -59,8 +59,8 @@ left_join(setNames(aggregate(InLaborForce, FUN = sum, by = list(CountyName)),
 c("CountyName", "LaborForceSum")), setNames(aggregate(Unemployed, FUN = sum, 
 by = list(CountyName)), c("CountyName", "UnemployedSum")), 
 by = c("CountyName")) %>% 
-mutate(UnemploymentRate = UnemployedSum/LaborForceSum) %>% 
-InsertRow(., c("Hamilton",0,0,0),21) %>% 
+mutate(UnemploymentRate = UnemployedSum/LaborForceSum) %$% 
+InsertRow(., c("Hamilton",0,0,mean(UnemploymentRate)),21) %>% 
 mutate_at(c(2,3,4), as.numeric)
 
 # Create Poverty Boxplot
