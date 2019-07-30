@@ -4,7 +4,11 @@ library(DataCombine)
 library(car)
 
 setwd("/Users/jiayan/Downloads/bayesianinference_HIVmortality-master/input_files")
+
 data <- read_csv("HIVdf.csv")
+#Change data class to avoide error
+data$PerCapInc <- as.numeric(data$PerCapInc)
+data$Pop <- as.numeric(data$Pop)
 # Compute 4 inequality measures by the definition in chap 2.2.3
 Theil <- data %$% left_join(., setNames(aggregate(PerCapInc*Pop, 
 by = list(CountyName = CountyName), sum), c("CountyName","IncCounty")), # aggregate the per-cap income by County
