@@ -2,8 +2,9 @@ library(tidyverse)
 library(magrittr)
 library(DataCombine)
 library(car)
+library(httr)
 
-setwd("/Users/jiayan/Downloads/bayesianinference_HIVmortality-master/input_files")
+data <- read_csv("https://raw.githubusercontent.com/Giant316/bayesianinference_HIVmortality/master/input_files/HIVdf.csv")
 data <- read_csv("HIVdf.csv")
 # Compute 4 inequality measures by the definition in chap 2.2.3
 Theil <- data %$% left_join(., setNames(aggregate(PerCapInc*Pop, 
